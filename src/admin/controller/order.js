@@ -299,6 +299,18 @@ module.exports = class extends Base {
             order_id: data.id,
             is_delete: 0
         }).select();
+        for (const orderGoods of data.goodsList) {
+            console.info(orderGoods);
+            let goods = await this.model('goods').where({
+                id: orderGoods.goods_id,
+            }).find();
+            console.info(goods);
+            let manufactor = await this.model('manufactor').where({
+                id: goods.manufactor_id,
+            }).find();
+            console.info(manufactor);
+            orderGoods.manufactor_name = manufactor.name;
+        }
         data.goodsCount = 0;
         data.goodsList.forEach(v => {
             data.goodsCount += v.number;
