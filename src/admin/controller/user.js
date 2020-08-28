@@ -25,6 +25,7 @@ module.exports = class extends Base {
         }
         return this.success(info);
     }
+
     async infoAction() {
         const id = this.get('id');
         const model = this.model('user');
@@ -36,6 +37,7 @@ module.exports = class extends Base {
         info.nickname = Buffer.from(info.nickname, 'base64').toString();
         return this.success(info);
     }
+
     async datainfoAction() {
         const id = this.get('id');
         let info = {};
@@ -62,6 +64,7 @@ module.exports = class extends Base {
         }).sum('number');
         return this.success(info);
     }
+
     async addressAction() {
         const id = this.get('id');
         const page = this.get('page') || 1;
@@ -83,6 +86,7 @@ module.exports = class extends Base {
         }
         return this.success(addr);
     }
+
     async saveaddressAction() {
         const id = this.post('id');
         const user_id = this.post('user_id');
@@ -107,6 +111,7 @@ module.exports = class extends Base {
         }).update(info);
         return this.success();
     }
+
     async cartdataAction() {
         const id = this.get('id');
         const page = this.get('page') || 1;
@@ -117,9 +122,19 @@ module.exports = class extends Base {
         }).order(['add_time DESC']).page(page, size).countSelect();
         for (const item of data.data) {
             item.add_time = moment.unix(item.add_time).format('YYYY-MM-DD HH:mm:ss');
+            let goods = await this.model('goods').where({
+                id: item.goods_id,
+            }).find();
+            console.info(goods);
+            let manufactor = await this.model('manufactor').where({
+                id: goods.manufactor_id,
+            }).find();
+            console.info(manufactor);
+            item.manufactor_name = manufactor.name;
         }
         return this.success(data);
     }
+
     async footAction() {
         const id = this.get('id');
         const page = this.get('page') || 1;
@@ -134,8 +149,20 @@ module.exports = class extends Base {
             user_id: id
         }).page(page, size).countSelect();
         console.log(data);
+        for (const item of data.data) {
+            let goods = await this.model('goods').where({
+                id: item.goods_id,
+            }).find();
+            console.info(goods);
+            let manufactor = await this.model('manufactor').where({
+                id: goods.manufactor_id,
+            }).find();
+            console.info(manufactor);
+            item.manufactor_name = manufactor.name;
+        }
         return this.success(data);
     }
+
     async orderAction() {
         const page = this.get('page') || 1;
         const size = this.get('size') || 10;
@@ -147,10 +174,22 @@ module.exports = class extends Base {
         }).order(['id DESC']).page(page, size).countSelect();
         console.log(data.count);
         for (const item of data.data) {
-            item.goodsList = await this.model('order_goods').field('goods_name,list_pic_url,number,goods_specifition_name_value,retail_price').where({
+            item.goodsList = await this.model('order_goods').field('goods_id,goods_name,list_pic_url,number,goods_specifition_name_value,retail_price').where({
                 order_id: item.id,
                 is_delete: 0
             }).select();
+            for (const orderGoods of item.goodsList) {
+                console.info(orderGoods);
+                let goods = await this.model('goods').where({
+                    id: orderGoods.goods_id,
+                }).find();
+                console.info(goods);
+                let manufactor = await this.model('manufactor').where({
+                    id: goods.manufactor_id,
+                }).find();
+                console.info(manufactor);
+                orderGoods.manufactor_name = manufactor.name;
+            }
             item.goodsCount = 0;
             item.goodsList.forEach(v => {
                 item.goodsCount += v.number;
@@ -172,6 +211,7 @@ module.exports = class extends Base {
         }
         return this.success(data);
     }
+
     async getOrderStatusText(orderInfo) {
         let statusText = '待付款';
         switch (orderInfo.order_status) {
@@ -217,6 +257,7 @@ module.exports = class extends Base {
         }
         return statusText;
     }
+
     async updateInfoAction() {
         const id = this.post('id');
         let nickname = this.post('nickname');
@@ -230,6 +271,7 @@ module.exports = class extends Base {
         });
         return this.success(data);
     }
+
     async updateNameAction() {
         const id = this.post('id');
         const name = this.post('name');
@@ -241,6 +283,7 @@ module.exports = class extends Base {
         });
         return this.success(data);
     }
+
     async updateMobileAction() {
         const id = this.post('id');
         const mobile = this.post('mobile');
@@ -252,6 +295,7 @@ module.exports = class extends Base {
         });
         return this.success(data);
     }
+
     async storeAction() {
         if (!this.isPost) {
             return false;
@@ -271,6 +315,7 @@ module.exports = class extends Base {
         }
         return this.success(values);
     }
+
     async destoryAction() {
         const id = this.post('id');
         await this.model('user').where({
