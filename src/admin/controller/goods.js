@@ -46,6 +46,11 @@ module.exports = class extends Base {
                 ele.is_on_sale = ele.is_on_sale ? "1" : "0";
             }
             item.product = product;
+
+            let manufactor = await this.model('manufactor').where({
+                id: item.manufactor_id,
+            }).find();
+            item.manufactor_name = manufactor.name;
         }
         return this.success(data);
     }
@@ -74,6 +79,21 @@ module.exports = class extends Base {
         let infoData = {
             kd: kd,
             cate: cate
+        };
+        return this.success(infoData);
+    }
+
+    async getManufactorDataAction() {
+        let manuFactor = [];
+        const manuFactorData = await this.model('manufactor').where({}).select();
+        for (const item of manuFactorData) {
+            manuFactor.push({
+                value: item.id,
+                label: item.name
+            })
+        }
+        let infoData = {
+            manuFactor: manuFactor
         };
         return this.success(infoData);
     }
@@ -169,6 +189,11 @@ module.exports = class extends Base {
                 ele.is_on_sale = ele.is_on_sale ? "1" : "0";
             }
             item.product = product;
+
+            const manufactor = await this.model('manufactor').where({
+                id: item.manufactor_id,
+            }).find();
+            item.manufactor_name = manufactor.name;
         }
         return this.success(data);
     }
@@ -424,9 +449,11 @@ module.exports = class extends Base {
             id: id
         }).find();
         let category_id = data.category_id;
+        let manufactor_id = data.manufactor_id;
         let infoData = {
             info: data,
             category_id: category_id,
+            manufactor_id: manufactor_id
         };
         return this.success(infoData);
     }
@@ -510,10 +537,12 @@ module.exports = class extends Base {
         const specData = this.post('specData');
         const specValue = this.post('specValue');
         const cateId = this.post('cateId');
+        const manufactorId = this.post('manufactorId');
         const model = this.model('goods');
         let picUrl = values.list_pic_url;
         let goods_id = values.id;
         values.category_id = cateId;
+        values.manufactor_id = manufactorId;
         values.is_index = values.is_index ? 1 : 0;
         values.is_new = values.is_new ? 1 : 0;
         let id = values.id;
