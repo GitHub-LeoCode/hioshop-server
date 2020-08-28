@@ -13,13 +13,22 @@ module.exports = class extends Base {
         const data = await model.where({goods_name: ['like', `%${name}%`]}).order(['id DESC']).page(page, size).countSelect();
         for (const item of data.data) {
             item.add_time = moment.unix(item.add_time).format('YYYY-MM-DD HH:mm:ss');
-            let userInfo = await this.model('user').where({id:item.user_id}).find();
-            if(!think.isEmpty(userInfo)){
+            let userInfo = await this.model('user').where({id: item.user_id}).find();
+            if (!think.isEmpty(userInfo)) {
                 item.nickname = Buffer.from(userInfo.nickname, 'base64').toString();
             }
-            else{
+            else {
                 item.nickname = '已删除'
             }
+            let goods = await this.model('goods').where({
+                id: item.goods_id,
+            }).find();
+            console.info(goods);
+            let manufactor = await this.model('manufactor').where({
+                id: goods.manufactor_id,
+            }).find();
+            console.info(manufactor);
+            item.manufactor_name = manufactor.name;
         }
 
         return this.success(data);
