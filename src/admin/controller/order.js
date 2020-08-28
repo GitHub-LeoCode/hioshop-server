@@ -34,10 +34,22 @@ module.exports = class extends Base {
             }).order(['id DESC']).page(page, size).countSelect();
         }
         for (const item of data.data) {
-            item.goodsList = await this.model('order_goods').field('goods_name,goods_aka,list_pic_url,number,goods_specifition_name_value,retail_price').where({
+            item.goodsList = await this.model('order_goods').field('goods_id,goods_name,goods_aka,list_pic_url,number,goods_specifition_name_value,retail_price').where({
                 order_id: item.id,
                 is_delete: 0
             }).select();
+            for (const orderGoods of item.goodsList) {
+                console.info(orderGoods);
+                let goods = await this.model('goods').where({
+                    id: orderGoods.goods_id,
+                }).find();
+                console.info(goods);
+                let manufactor = await this.model('manufactor').where({
+                    id: goods.manufactor_id,
+                }).find();
+                console.info(manufactor);
+                orderGoods.manufactor_name = manufactor.name;
+            }
             item.goodsCount = 0;
             item.goodsList.forEach(v => {
                 item.goodsCount += v.number;
@@ -81,6 +93,7 @@ module.exports = class extends Base {
         }
         return this.success(data);
     }
+
     async getAutoStatusAction() {
         let status = await this.model('settings').where({
             id: 1
@@ -88,6 +101,7 @@ module.exports = class extends Base {
         let info = status.autoDelivery;
         return this.success(info);
     }
+
     async toDeliveryAction() {
         const page = this.get('page') || 1;
         const size = this.get('size') || 10;
@@ -121,6 +135,7 @@ module.exports = class extends Base {
         }
         return this.success(data);
     }
+
     async saveGoodsListAction() {
         // console.log(typeof(data));
         let id = this.post('id');
@@ -169,6 +184,7 @@ module.exports = class extends Base {
             return this.success(order_sn);
         }
     }
+
     async goodsListDeleteAction() {
         console.log(this.post('id'));
         let id = this.post('id');
@@ -199,6 +215,7 @@ module.exports = class extends Base {
         });
         return this.success(order_sn);
     }
+
     async saveAdminMemoAction() {
         const id = this.post('id');
         const text = this.post('text');
@@ -232,6 +249,7 @@ module.exports = class extends Base {
         }
         return this.success(data);
     }
+
     async savePrintInfoAction() {
         const id = this.post('id');
         const print_info = this.post('print_info');
@@ -244,6 +262,7 @@ module.exports = class extends Base {
         }).update(info);
         return this.success(data);
     }
+
     async saveExpressValueInfoAction() {
         const id = this.post('id');
         const express_value = this.post('express_value');
@@ -256,6 +275,7 @@ module.exports = class extends Base {
         }).update(info);
         return this.success(data);
     }
+
     async saveRemarkInfoAction() {
         const id = this.post('id');
         const remark = this.post('remark');
@@ -268,6 +288,7 @@ module.exports = class extends Base {
         }).update(info);
         return this.success(data);
     }
+
     async detailAction() {
         const id = this.get('orderId');
         const model = this.model('order');
@@ -354,6 +375,7 @@ module.exports = class extends Base {
             sender: senderInfo
         });
     }
+
     async getAllRegionAction() { // 我写的算法
         const model = this.model('region');
         const aData = await model.where({
@@ -394,6 +416,7 @@ module.exports = class extends Base {
         }
         return this.success(newData);
     }
+
     async orderpackAction() {
         const id = this.get('orderId');
         const model = this.model('order');
@@ -403,6 +426,7 @@ module.exports = class extends Base {
             order_status: 300
         });
     }
+
     async orderReceiveAction() {
         const id = this.get('orderId');
         let currentTime = parseInt(new Date().getTime() / 1000);
@@ -414,6 +438,7 @@ module.exports = class extends Base {
             shipping_time: currentTime
         });
     }
+
     async orderPriceAction() {
         const id = this.get('orderId');
         const goodsPrice = this.get('goodsPrice');
@@ -433,15 +458,18 @@ module.exports = class extends Base {
             id: id
         }).update(newData);
     }
+
     async getOrderExpressAction() {
         const orderId = this.post('orderId');
         const latestExpressInfo = await this.model('order_express').getLatestOrderExpressByAli(orderId);
         return this.success(latestExpressInfo);
     }
+
     async getPrintTestAction() {
         const latestExpressInfo = await this.model('order_express').printExpress();
         return this.success(latestExpressInfo);
     }
+
     async getMianExpressAction() {
         const orderId = this.post('orderId');
         const sender = this.post('sender');
@@ -494,6 +522,7 @@ module.exports = class extends Base {
             receiver: receiverInfo
         });
     }
+
     async rePrintExpressAction() {
         const date = new Date();
         let orderId = this.get('orderId')
@@ -505,6 +534,7 @@ module.exports = class extends Base {
         });
         return this.success(info);
     }
+
     async directPrintExpressAction() {
         let orderId = this.get('orderId')
         let express = await this.model('order_express').where({
@@ -524,6 +554,7 @@ module.exports = class extends Base {
         express.send_time = moment.unix(express.add_time).format('YYYY-MM-DD');
         return this.success(express);
     }
+
     async orderExpressAdd(ele, orderId) {
         let currentTime = parseInt(new Date().getTime() / 1000);
         let info = await this.model('order_express').where({
@@ -563,6 +594,7 @@ module.exports = class extends Base {
         }
         // 如果生成快递单号了。然后又最后没有使用，又去生成快递单号，那么应该重新生成下订单号，用新订单号去生成快递单号，然后update掉旧的order_express
     }
+
     // 点击打印并发货按钮后，就将订单的状态改成已发货
     async goDeliveryAction() {
         let orderId = this.post('order_id');
@@ -580,7 +612,7 @@ module.exports = class extends Base {
         let orderInfo = await this.model('order').where({
             id: orderId
         }).field('user_id').find();
-     
+
         let user = await this.model('user').where({
             id: orderInfo.user_id
         }).find();
@@ -606,37 +638,38 @@ module.exports = class extends Base {
         // 支付时间
         let shippingTime = moment.unix(currentTime).format('YYYY-MM-DD HH:mm:ss');
         // 订单金额
-		// 订阅消息 请先在微信小程序的官方后台设置好订阅消息模板，然后根据自己的data的字段信息，设置好data
+        // 订阅消息 请先在微信小程序的官方后台设置好订阅消息模板，然后根据自己的data的字段信息，设置好data
         let TEMPLATE_ID = 'w6AMCJ0FI2LqjCjWPIrpnVWTsFgnlNlmCf9TTDmG6_U'
         let message = {
             "touser": openId,
             "template_id": TEMPLATE_ID,
             "page": '/pages/ucenter/index/index',
-            "miniprogram_state":"formal",
-            "lang":"zh_CN",
+            "miniprogram_state": "formal",
+            "lang": "zh_CN",
             "data": {
-              "thing7": {
-                  "value": goodsName
-              },
-              "date2": {
-                  "value": shippingTime
-              },
-              "name3": {
-                  "value": express.shipper_name
-              },
-              "character_string4": {
-                  "value": express.logistic_code
-              } ,
-              "thing9": {
-                  "value": '签收前请检查包裹！'
-              }
-          }
+                "thing7": {
+                    "value": goodsName
+                },
+                "date2": {
+                    "value": shippingTime
+                },
+                "name3": {
+                    "value": express.shipper_name
+                },
+                "character_string4": {
+                    "value": express.logistic_code
+                },
+                "thing9": {
+                    "value": '签收前请检查包裹！'
+                }
+            }
         }
         const tokenServer = think.service('weixin', 'api');
         const token = await tokenServer.getAccessToken();
-        const res = await tokenServer.sendMessage(token,message);
+        const res = await tokenServer.sendMessage(token, message);
         return this.success();
     }
+
     async goPrintOnlyAction() {
         let orderId = this.post('order_id');
         let updateData = {
@@ -647,6 +680,7 @@ module.exports = class extends Base {
         }).update(updateData);
         return this.success(data);
     }
+
     async orderDeliveryAction() {
         const orderId = this.get('orderId');
         const method = this.get('method');
@@ -734,36 +768,37 @@ module.exports = class extends Base {
         // 支付时间
         let shippingTime = moment.unix(currentTime).format('YYYY-MM-DD HH:mm:ss');
         // 订单金额
-		// 订阅消息 请先在微信小程序的官方后台设置好订阅消息模板，然后根据自己的data的字段信息，设置好data
+        // 订阅消息 请先在微信小程序的官方后台设置好订阅消息模板，然后根据自己的data的字段信息，设置好data
         let TEMPLATE_ID = 'w6AMCJ0FI2LqjCjWPIrpnVWTsFgnlNlmCf9TTDmG6_U'
         let message = {
             "touser": openId,
             "template_id": TEMPLATE_ID,
             "page": '/pages/ucenter/index/index',
-            "miniprogram_state":"formal",
-            "lang":"zh_CN",
+            "miniprogram_state": "formal",
+            "lang": "zh_CN",
             "data": {
-              "thing7": {
-                  "value": goodsName
-              },
-              "date2": {
-                  "value": shippingTime
-              },
-              "name3": {
-                  "value": expressName
-              },
-              "character_string4": {
-                  "value": logistic_code
-              } ,
-              "thing9": {
-                  "value": '签收前请检查包裹！'
-              }
-          }
+                "thing7": {
+                    "value": goodsName
+                },
+                "date2": {
+                    "value": shippingTime
+                },
+                "name3": {
+                    "value": expressName
+                },
+                "character_string4": {
+                    "value": logistic_code
+                },
+                "thing9": {
+                    "value": '签收前请检查包裹！'
+                }
+            }
         }
         const tokenServer = think.service('weixin', 'api');
         const token = await tokenServer.getAccessToken();
-        const res = await tokenServer.sendMessage(token,message);
+        const res = await tokenServer.sendMessage(token, message);
     }
+
     async checkExpressAction() {
         const id = this.get('orderId');
         let info = await this.model('order_express').where({
@@ -775,6 +810,7 @@ module.exports = class extends Base {
             return this.fail(100, '没找到');
         }
     }
+
     async saveAddressAction() {
         const sn = this.post('order_sn');
         const name = this.post('name');
@@ -798,6 +834,7 @@ module.exports = class extends Base {
         }).update(info);
         return this.success(data);
     }
+
     async storeAction() {
         if (!this.isPost) {
             return false;
@@ -817,6 +854,7 @@ module.exports = class extends Base {
         }
         return this.success(values);
     }
+
     async changeStatusAction() {
         const orderSn = this.post('orderSn');
         const value = this.post('status');
@@ -827,6 +865,7 @@ module.exports = class extends Base {
         });
         return this.success(info);
     }
+
     async destoryAction() {
         const id = this.post('id');
         await this.model('order').where({
@@ -839,6 +878,7 @@ module.exports = class extends Base {
         // TODO 事务，验证订单是否可删除（只有失效的订单才可以删除）
         return this.success();
     }
+
     async getGoodsSpecificationAction() {
         const goods_id = this.post('goods_id');
         let data = await this.model('goods_specification').where({
